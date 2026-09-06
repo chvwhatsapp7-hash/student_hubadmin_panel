@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../config";
 
 function Users() {
   const [users, setUsers]             = useState([]);
@@ -18,7 +19,7 @@ function Users() {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE_URL}/bulk?type=users&page=${page}&limit=${limit}&search=${search}`
       );
       const json = await res.json();
       if (json.success) {
@@ -46,109 +47,115 @@ function Users() {
   };
 
   return (
-    <div>
-
+    <div className="admin-page">
       {/* ── Header ── */}
-      <div>
-        <h1>{total} Users</h1>
-        <p>Total {total} registered users</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">👥 User Directory</h1>
+          <p className="page-subtitle">Manage registered students, recruiters, and platform administrators</p>
+        </div>
+        <div className="header-badge">{total} Registered Users</div>
       </div>
 
       {/* ── Search Bar ── */}
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <button type="submit">Search</button>
-        {search && (
-          <button type="button" onClick={handleClear}>Clear</button>
-        )}
-      </form>
+      <div className="filter-bar">
+        <form onSubmit={handleSearch} className="search-form">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search by candidate name or email..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary">Search</button>
+          {search && (
+            <button type="button" className="btn btn-secondary" onClick={handleClear}>Clear</button>
+          )}
+        </form>
+      </div>
 
       {/* ── Table ── */}
-      <table>
-        <thead>
-          <tr>
-            {["#", "Name", "Email", "Phone", "Degree", "University", "Role", "Status", "Joined"].map((h) => (
-              <th key={h}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
+      <div className="table-wrapper">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={9}>⏳ Loading users...</td>
+              <th>#</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Education</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Joined Date</th>
             </tr>
-          ) : users.length === 0 ? (
-            <tr>
-              <td colSpan={9}>No users found</td>
-            </tr>
-          ) : (
-            users.map((user, index) => (
-              <tr key={user.user_id}>
-                <td>{(page - 1) * limit + index + 1}</td>
-
-                <td>
-                  <span>{user.full_name?.charAt(0).toUpperCase()}</span>
-                  <span>{user.full_name}</span>
-                </td>
-
-                <td>{user.email}</td>
-
-                <td>{user.phone || "—"}</td>
-
-                <td>{user.degree || "—"}</td>
-
-                <td>{user.university || "—"}</td>
-
-                <td>{user.role_name?.replace(/_/g, " ")}</td>
-
-                <td>{user.status}</td>
-
-                <td>
-                  {new Date(user.created_at).toLocaleDateString("en-IN", {
-                    day: "2-digit", month: "short", year: "numeric",
-                  })}
-                </td>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="table-loading">Loading users...</td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="table-empty">No users found</td>
+              </tr>
+            ) : (
+              users.map((user, index) => (
+                <tr key={user.user_id}>
+                  <td className="text-muted">{(page - 1) * limit + index + 1}</td>
+
+                  <td>
+                    <div className="font-semibold">{user.full_name}</div>
+                  </td>
+
+                  <td>{user.email}</td>
+
+                  <td className="text-muted text-sm">{user.phone || "—"}</td>
+
+                  <td>
+                    <div className="font-medium text-sm">{user.degree || "Student"}</div>
+                    <div className="text-muted text-xs">{user.university || "—"}</div>
+                  </td>
+
+                  <td>
+                    <span className={`badge ${user.role_name === "Admin" ? "badge-danger" : user.role_name === "Recruiter" ? "badge-warning" : "badge-primary"}`}>
+                      {user.role_name || "Student"}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className={`badge ${user.status === "active" ? "badge-success" : "badge-secondary"}`}>
+                      {user.status === "active" ? "✓ Active" : "Inactive"}
+                    </span>
+                  </td>
+
+                  <td className="text-muted text-sm">
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div>
-          <span>
-            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} users
-          </span>
-          <div>
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1}
-            >
-              ← Prev
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page === totalPages}
-            >
-              Next →
-            </button>
-          </div>
+        <div className="pagination-bar">
+          <button
+            className="btn btn-secondary"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            ← Previous
+          </button>
+          <span className="pagination-info">Page {page} of {totalPages}</span>
+          <button
+            className="btn btn-secondary"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next →
+          </button>
         </div>
       )}
     </div>

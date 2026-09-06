@@ -1,58 +1,59 @@
 import { useState, useEffect } from "react";
+import ImageUpload from "../components/ImageUpload";
+import { API_BASE_URL } from "../config";
 
 const initialForm = {
-  title:       "",
-  company_id:  "",
-  location:    "",
-  duration:    "",
-  stipend:     "",
+  title: "",
+  company_id: "",
+  location: "",
+  duration: "",
+  stipend: "",
   description: "",
-  skill_ids:   [],
+  image_url: "",
+  skill_ids: [],
 };
 
 function Internships() {
   // ── List state ──
   const [internships, setInternships] = useState([]);
-  const [page, setPage]               = useState(1);
-  const [total, setTotal]             = useState(0);
-  const [totalPages, setTotalPages]   = useState(0);
-  const [search, setSearch]           = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [loading, setLoading]         = useState(false);
+  const [loading, setLoading] = useState(false);
   const limit = 10;
 
   // ── Form state ──
-  const [form, setForm]               = useState(initialForm);
-  const [companies, setCompanies]     = useState([]);
-  const [skills, setSkills]           = useState([]);
+  const [form, setForm] = useState(initialForm);
+  const [companies, setCompanies] = useState([]);
+  const [skills, setSkills] = useState([]);
   const [formLoading, setFormLoading] = useState(false);
-  const [success, setSuccess]         = useState(null);
-  const [error, setError]             = useState(null);
-  const [showForm, setShowForm]       = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   // ── Fetch list on page/search change ──
   useEffect(() => { fetchInternships(); }, [page, search]);
 
   // ── Fetch companies + skills once ──
   useEffect(() => {
-    // ✅ from /api/companies GET
-    fetch("https://studenthub-backend-woad.vercel.app/api/companies")
+    fetch(`${API_BASE_URL}/companies`)
       .then((r) => r.json())
       .then((json) => { if (json.success) setCompanies(json.data); })
-      .catch(() => {});
+      .catch(() => { });
 
-    // ✅ from /api/skills GET
-    fetch("https://studenthub-backend-woad.vercel.app/api/skills")
+    fetch(`${API_BASE_URL}/skills`)
       .then((r) => r.json())
       .then((json) => { if (json.skills) setSkills(json.skills); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchInternships = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://studenthub-backend-woad.vercel.app/api/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`
+        `${API_BASE_URL}/bulk?type=internships&page=${page}&limit=${limit}&search=${search}`
       );
       const json = await res.json();
       if (json.success) {
@@ -100,22 +101,23 @@ function Internships() {
     setError(null);
 
     const payload = {
-      title:       form.title,
-      company_id:  parseInt(form.company_id),
-      location:    form.location,
-      duration:    form.duration,
-      stipend:     form.stipend,
+      title: form.title,
+      company_id: parseInt(form.company_id),
+      location: form.location,
+      duration: form.duration,
+      stipend: form.stipend,
       description: form.description,
-      skill_ids:   form.skill_ids, // ✅ array of IDs
+      image_url: form.image_url,
+      skill_ids: form.skill_ids, // ✅ array of IDs
     };
 
     try {
       const res = await fetch(
-        "https://studenthub-backend-woad.vercel.app/api/internships",
+        `${API_BASE_URL}/internships`,
         {
-          method:  "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(payload),
+          body: JSON.stringify(payload),
         }
       );
       const json = await res.json();
@@ -154,7 +156,7 @@ function Internships() {
           <h2>New Internship</h2>
 
           {success && <p>{success}</p>}
-          {error   && <p>{error}</p>}
+          {error && <p>{error}</p>}
 
           {/* Title */}
           <div>
@@ -221,6 +223,13 @@ function Internships() {
             />
           </div>
 
+          {/* Cloudinary Post Banner Image Uploader */}
+          <ImageUpload
+            label="Post Banner / Image (Cloudinary)"
+            value={form.image_url}
+            onChange={(url) => setForm((prev) => ({ ...prev, image_url: url }))}
+          />
+
           {/* Description */}
           <div>
             <label>Description</label>
@@ -284,7 +293,7 @@ function Internships() {
       <table>
         <thead>
           <tr>
-            {["#", "Title", "Company", "Location", "Stipend", "Duration", "Type", "Applications", "Status", "Posted"].map((h) => (
+            {["#", "Media", "Title", "Company", "Location", "Stipend", "Duration", "Type", "Applications", "Posted"].map((h) => (
               <th key={h}>{h}</th>
             ))}
           </tr>
@@ -298,14 +307,24 @@ function Internships() {
             internships.map((internship, index) => (
               <tr key={internship.internship_id}>
                 <td>{(page - 1) * limit + index + 1}</td>
-                <td>{internship.title}</td>
+                <td>
+                  {internship.image_url ? (
+                    <img
+                      src={internship.image_url}
+                      alt={internship.title}
+                      style={{ width: "45px", height: "32px", objectFit: "cover", borderRadius: "6px" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "11px", color: "#9CA3AF" }}>No media</span>
+                  )}
+                </td>
+                <td><strong>{internship.title}</strong></td>
                 <td>{internship.company_name || "—"}</td>
                 <td>{internship.location || "—"}</td>
                 <td>{internship.stipend || "—"}</td>
                 <td>{internship.duration || "—"}</td>
                 <td>{internship.internship_type || "—"}</td>
                 <td>{internship.total_applications ?? 0}</td>
-                <td>{internship.status}</td>
                 <td>
                   {new Date(internship.created_at).toLocaleDateString("en-IN", {
                     day: "2-digit", month: "short", year: "numeric",
