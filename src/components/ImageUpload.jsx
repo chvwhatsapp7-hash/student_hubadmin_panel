@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../config";
 
-export default function ImageUpload({ value, onChange, label = "Post Banner / Image" }) {
+export default function ImageUpload({ value, onChange, label = "Post Banner / Image", folder = "studenthub/posts" }) {
   const [preview, setPreview] = useState(value || "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -33,10 +34,10 @@ export default function ImageUpload({ value, onChange, label = "Post Banner / Im
 
         // Upload to backend Cloudinary upload API
         try {
-          const res = await fetch("http://192.168.29.54:3000/api/upload", {
+          const res = await fetch(`${API_BASE_URL}/upload`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64data, folder: "studenthub/posts" }),
+            body: JSON.stringify({ image: base64data, folder }),
           });
           const data = await res.json();
           if (data.success && data.data?.url) {
